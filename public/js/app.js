@@ -235,34 +235,27 @@
       reconnectionAttempts: 10
     });
 
-    state.socket.on('connect', function () {
-      console.log('[App] Socket connected:', state.socket.id);
-      showToast('Connected to server', 'success');
-    });
-
     state.socket.on('disconnect', function () {
       console.log('[App] Socket disconnected');
       updateSyncStatus('disconnected');
-      showToast('Disconnected — reconnecting…', 'error');
     });
 
-    state.socket.on('reconnect', function () {
-      showToast('Reconnected!', 'success');
-      // If we were in a room, we need to re-join
+    // In Socket.io v4, 'connect' fires on reconnects
+    state.socket.on('connect', function () {
+      console.log('[App] Socket connected:', state.socket.id);
+      showToast('Connected to server', 'success');
+      
+      // If we were in a room, rejoin it without resetting UI
       if (state.roomCode) {
-        if (state.isHost) {
-          showToast('Room was lost. Please create a new one.', 'warning');
-          resetState();
-          showScreen(dom.landingScreen);
-        } else {
-          state.socket.emit('room:join', { code: state.roomCode }, function (response) {
-            if (!response.success) {
-              showToast('Room no longer exists.', 'error');
-              resetState();
-              showScreen(dom.landingScreen);
-            }
-          });
-        }
+        state.socket.emit('room:rejoin', { code: state.roomCode, isHost: state.isHost }, function (response) {
+          if (!response.success) {
+            showToast('Room expired. Please create a new one.', 'warning');
+            resetState();
+            showScreen(dom.landingScreen);
+          } else {
+            console.log('[App] Successfully rejoined room');
+          }
+        });
       }
     });
 

@@ -161,6 +161,33 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ── Room: Rejoin (Mobile Backgrounding) ───────────────────────────
+  socket.on('room:rejoin', (data, callback) => {
+    const code = data.code;
+    const room = rooms.get(code);
+
+    if (!room) {
+      if (callback) callback({ success: false });
+      return;
+    }
+
+    if (data.isHost) {
+      if (room.hostTimeout) clearTimeout(room.hostTimeout);
+      room.host = socket.id;
+      socket.join(code);
+      console.log(`[Room] Host reconnected to ${code}`);
+      if (room.guest) io.to(room.guest).emit('room:userJoined', { userId: socket.id });
+    } else {
+      if (room.guestTimeout) clearTimeout(room.guestTimeout);
+      room.guest = socket.id;
+      socket.join(code);
+      console.log(`[Room] Guest reconnected to ${code}`);
+      if (room.host) io.to(room.host).emit('room:userJoined', { userId: socket.id });
+    }
+    
+    if (callback) callback({ success: true });
+  });
+
   // ── Music: Host uploads metadata ──────────────────────────────────
   socket.on('music:meta', (meta) => {
     const found = getSocketRoom(socket);
@@ -272,18 +299,28 @@ function leaveCurrentRoom(socket) {
   const { code, room } = found;
 
   if (room.host === socket.id) {
-    // Host left — notify guest and destroy room
-    if (room.guest) {
-      io.to(room.guest).emit('room:hostLeft');
-    }
-    rooms.delete(code);
-    console.log(`[Room] Destroyed: ${code} (host left)`);
+    // Host disconnected — wait 60s before destroying
+    room.hostTimeout = setTimeout(() => {
+      if (rooms.has(code) && rooms.get(code).host === socket.id) {
+        if (room.guest) {
+          io.to(room.guest).emit('room:hostLeft');
+        }
+        rooms.delete(code);
+        console.log(`[Room] Destroyed: ${code} (host timeout)`);
+      }
+    }, 60000);
+    console.log(`[Room] Host disconnected, waiting for reconnect: ${code}`);
   } else if (room.guest === socket.id) {
-    // Guest left — notify host
-    room.guest = null;
-    room.musicReady = false;
-    io.to(room.host).emit('room:guestLeft');
-    console.log(`[Room] Guest left room ${code}`);
+    // Guest disconnected — wait 60s
+    room.guestTimeout = setTimeout(() => {
+      if (rooms.has(code) && rooms.get(code).guest === socket.id) {
+        room.guest = null;
+        room.musicReady = false;
+        io.to(room.host).emit('room:guestLeft');
+        console.log(`[Room] Guest timeout: ${code}`);
+      }
+    }, 60000);
+    console.log(`[Room] Guest disconnected, waiting for reconnect: ${code}`);
   }
 
   socket.leave(code);
