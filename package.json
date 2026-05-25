@@ -1,0 +1,25 @@
+{
+  "name": "mousike",
+  "version": "1.0.0",
+  "description": "Synchronized music playback across two phones",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "keywords": [
+    "music",
+    "sync",
+    "websocket",
+    "audio"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "play-dl": "^1.9.7",
+    "socket.io": "^4.8.3",
+    "youtube-dl-exec": "^3.1.7",
+    "youtubei.js": "^17.0.1",
+    "yt-search": "^2.13.1"
+  }
+}

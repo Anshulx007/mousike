@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Mousike — Connect two phones and play music in perfect sync">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Mousike — Synced Music</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══ Floating Background Particles ═══ -->
+  <div class="particles" aria-hidden="true">
+    <div class="particle particle--1"></div>
+    <div class="particle particle--2"></div>
+    <div class="particle particle--3"></div>
+    <div class="particle particle--4"></div>
+    <div class="particle particle--5"></div>
+  </div>
+
+  <!-- ═══ Toast Container ═══ -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ═══ Main App ═══ -->
+  <div id="app">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SCREEN 1: LANDING
+         ═══════════════════════════════════════════════════════════════ -->
+    <div id="landingScreen" class="screen landing active">
+
+      <!-- Branding -->
+      <div class="landing__brand">
+        <div class="brand-icon-wrap">
+          <svg width="80" height="80" viewBox="0 0 64 64" fill="none">
+            <defs>
+              <linearGradient id="brandGrad" x1="0" y1="0" x2="64" y2="64">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="28" stroke="url(#brandGrad)" stroke-width="2.5" fill="none" opacity="0.3"/>
+            <circle cx="32" cy="32" r="20" stroke="url(#brandGrad)" stroke-width="2" fill="none" opacity="0.15"/>
+            <circle cx="32" cy="32" r="8" fill="url(#brandGrad)"/>
+            <!-- Sound wave arcs -->
+            <path d="M42 22 C47 27, 47 37, 42 42" stroke="url(#brandGrad)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M46 18 C53 25, 53 39, 46 46" stroke="url(#brandGrad)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+            <path d="M50 14 C59 23, 59 41, 50 50" stroke="url(#brandGrad)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.3"/>
+          </svg>
+        </div>
+        <h1>Mousike</h1>
+        <p class="brand-version">v1.0</p>
+      </div>
+
+      <p class="subtitle landing__tagline">Connect two phones. Play music in perfect sync.</p>
+
+      <!-- Action Buttons -->
+      <div class="landing__actions">
+        <button id="btnCreateRoom" class="btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+          Create Room
+        </button>
+        <button id="btnJoinRoom" class="btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Join Room
+        </button>
+      </div>
+
+      <!-- Join Room Input (hidden by default) -->
+      <div id="joinInput" class="join-input-wrap hidden">
+        <label class="subtitle" style="display:block; text-align:center; margin-bottom:10px;">Enter room code</label>
+        <div class="join-input-row">
+          <input type="text" id="roomCodeInput" class="input code-input-field" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          <button id="btnSubmitJoin" class="btn btn-submit-join">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="landing__footer">
+        <p class="text-muted text-sm">Both devices must be on the same network</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SCREEN 2: ROOM (Waiting / File Upload)
+         ═══════════════════════════════════════════════════════════════ -->
+    <div id="roomScreen" class="screen room">
+
+      <!-- Room Header -->
+      <div class="screen-header">
+        <button id="btnLeaveRoom" class="btn-icon" aria-label="Leave room">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+        </button>
+        <h2>Your Room</h2>
+        <div id="syncIndicator" class="sync-status sync-status--syncing">
+          <span class="sync-status__dot"></span>
+          <span class="sync-label">Syncing…</span>
+        </div>
+      </div>
+
+      <!-- Room Code Display -->
+      <div class="glass-panel text-center">
+        <p class="text-muted text-sm" style="margin-bottom:10px;">Room Code</p>
+        <div id="roomCodeDisplay" class="room-code" title="Tap to copy">----</div>
+        <p id="roomCodeHint" class="text-muted text-sm" style="margin-top:10px;">Tap the code to copy • Share with your friend</p>
+      </div>
+
+      <!-- Connected Users -->
+      <div class="users-row">
+        <div class="user-badge">
+          <div class="user-badge__avatar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span>You</span>
+          <span class="text-muted" id="userRole">(host)</span>
+        </div>
+
+        <div class="connection-line-wrap">
+          <div class="connection-line"></div>
+          <div id="connectionDot" class="connection-dot"></div>
+        </div>
+
+        <div class="user-badge" id="otherUserBadge">
+          <div class="user-badge__avatar user-badge__avatar--waiting" id="otherAvatar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span id="otherUserLabel">Waiting...</span>
+        </div>
+      </div>
+
+      <!-- Online Search (Host only) -->
+      <div id="searchSection" class="w-full" style="margin-bottom: 24px;">
+        <div class="glass-panel" style="padding: 16px;">
+          <p class="text-muted text-sm" style="margin-bottom: 12px; font-weight: 500;">Play from YouTube</p>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="searchInput" class="input" placeholder="Search for a song..." style="flex: 1;">
+            <button id="btnSearch" class="btn" style="padding: 0 16px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+          </div>
+          <div id="searchResults" class="search-results hidden" style="margin-top: 16px; max-height: 250px; overflow-y: auto;">
+            <!-- Results injected here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="divider" id="uploadDivider" style="text-align: center; margin: 0 0 24px 0; color: rgba(255,255,255,0.4); font-size: 0.85em; letter-spacing: 1px; text-transform: uppercase;">— Or local file —</div>
+
+      <!-- File Upload (Host only) -->
+      <div id="uploadSection" class="w-full">
+        <div id="dropZone" class="upload-area">
+          <div class="upload-area__icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+          <p class="upload-area__title">Drop a music file here</p>
+          <p class="text-muted text-sm">MP3, WAV, OGG, M4A — up to 15MB</p>
+          <input type="file" id="fileInput" accept="audio/*" hidden>
+          <button id="btnBrowse" class="btn-secondary btn-browse">Browse Files</button>
+        </div>
+      </div>
+
+      <!-- Transfer Progress -->
+      <div id="transferSection" class="hidden w-full">
+        <div class="glass-panel transfer-card">
+          <div class="transfer-info-row">
+            <div class="transfer-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+              </svg>
+            </div>
+            <div class="transfer-details">
+              <span id="transferFileName" class="transfer-name">song.mp3</span>
+              <span id="transferStatus" class="transfer-status text-muted text-sm">Preparing...</span>
+            </div>
+          </div>
+          <div class="progress-bar" style="margin-bottom: 16px;">
+            <div id="transferProgress" class="progress-bar__fill" style="width: 0%"></div>
+          </div>
+          <button id="btnCancelTransfer" class="btn-secondary" style="width: 100%; padding: 8px; font-size: 0.85rem;">
+            Change Song
+          </button>
+        </div>
+      </div>
+
+      <!-- Ready to Play -->
+      <div id="readySection" class="hidden w-full text-center">
+        <div class="ready-card glass-panel">
+          <div class="ready-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-linecap="round"/>
+              <polyline points="22 4 12 14.01 9 11.01" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p style="font-weight:500; margin-bottom:16px;">Both devices ready!</p>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button id="btnGoToPlayer" class="btn">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              Open Player
+            </button>
+            <button id="btnChangeSongReady" class="btn-secondary" style="padding: 10px;">
+              Change Song
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         SCREEN 3: PLAYER
+         ═══════════════════════════════════════════════════════════════ -->
+    <div id="playerScreen" class="screen player">
+
+      <!-- Player Header -->
+      <div class="screen-header">
+        <button id="btnBackToRoom" class="btn-icon" aria-label="Back to room">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <div id="playerSyncIndicator" class="sync-status sync-status--synced">
+          <span class="sync-status__dot" id="playerSyncDot"></span>
+          <span id="playerSyncLabel">Synced</span>
+        </div>
+        <span class="text-muted text-sm" id="playerRoomCode">Room: ----</span>
+      </div>
+
+      <!-- Visualizer -->
+      <div class="visualizer-wrap">
+        <canvas id="visualizerCanvas"></canvas>
+      </div>
+
+      <!-- Song Info -->
+      <div class="track-info">
+        <p class="track-info__title" id="songTitle">No song loaded</p>
+        <p class="track-info__artist" id="songArtist">Select a track to play</p>
+      </div>
+
+      <!-- Seek Bar -->
+      <div class="seek-bar-wrap">
+        <span class="time" id="currentTime">0:00</span>
+        <input type="range" id="seekBar" class="seek-bar" min="0" max="100" value="0" step="0.1">
+        <span class="time" id="totalTime">0:00</span>
+      </div>
+
+      <!-- Player Controls -->
+      <div class="controls">
+        <button id="btnRewind" class="btn-prev" aria-label="Rewind 10s">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+        </button>
+        <button id="btnPlayPause" class="btn-play" aria-label="Play / Pause">
+          <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="6 3 20 12 6 21 6 3"/>
+          </svg>
+          <svg id="iconPause" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="hidden">
+            <rect x="6" y="4" width="4" height="16" rx="1"/>
+            <rect x="14" y="4" width="4" height="16" rx="1"/>
+          </svg>
+        </button>
+        <button id="btnForward" class="btn-next" aria-label="Forward 10s">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Volume Slider -->
+      <div class="volume-wrap">
+        <button id="btnVolDown" class="volume-btn" aria-label="Volume down">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          </svg>
+        </button>
+        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="80">
+        <button id="btnVolUp" class="volume-btn" aria-label="Volume up">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Manual Sync Offset -->
+      <div class="sync-offset-wrap">
+        <span class="sync-offset-label">Sync adjust</span>
+        <input type="range" id="syncOffsetSlider" class="volume-slider" min="-200" max="200" value="0" step="5">
+        <span class="sync-offset-label" id="syncOffsetValue">0ms</span>
+      </div>
+    </div>
+
+  </div><!-- #app -->
+
+  <!-- ═══ Scripts ═══ -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/clockSync.js"></script>
+  <script src="js/audioEngine.js"></script>
+  <script src="js/visualizer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
