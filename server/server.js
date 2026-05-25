@@ -19,6 +19,58 @@ const io = new Server(server, {
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Enable JSON body parsing for POST endpoints
+app.use(express.json());
+
+const ytSearch = require('yt-search');
+const youtubedl = require('youtube-dl-exec');
+
+// ─── YouTube APIs ─────────────────────────────────────────────────────
+app.get('/api/search', async (req, res) => {
+  try {
+    const query = req.query.q;
+    if (!query) return res.status(400).json({ error: 'Query required' });
+    const r = await ytSearch(query);
+    const videos = r.videos.slice(0, 10).map(v => ({
+      title: v.title,
+      url: v.url,
+      author: v.author.name,
+      duration: v.timestamp,
+      image: v.image
+    }));
+    res.json({ results: videos });
+  } catch (err) {
+    console.error('[API] Search error:', err);
+    res.status(500).json({ error: 'Failed to search' });
+  }
+});
+
+app.get('/api/stream', (req, res) => {
+  const url = req.query.url;
+  if (!url) return res.status(400).json({ error: 'URL required' });
+
+  console.log(`[API] Streaming audio for: ${url}`);
+  
+  // Try to hint to the browser that it's audio
+  res.setHeader('Content-Type', 'audio/mp4');
+  
+  const subprocess = youtubedl.exec(url, {
+    f: 'bestaudio',
+    o: '-' // Write to stdout
+  });
+
+  subprocess.stdout.pipe(res);
+
+  subprocess.on('close', (code) => {
+    if (code !== 0) console.error(`[API] Stream closed with code ${code}`);
+  });
+  
+  subprocess.on('error', (err) => {
+    console.error('[API] yt-dlp stream error:', err);
+    if (!res.headersSent) res.status(500).send('Error streaming');
+  });
+});
+
 // ─── Room Management ──────────────────────────────────────────────────
 const rooms = new Map(); // roomCode -> { host, guest, musicMeta, chunks[] }
 
